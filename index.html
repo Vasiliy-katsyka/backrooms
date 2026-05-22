@@ -23,7 +23,7 @@
             height: 100%;
             position: absolute;
             top: 0; left: 0;
-            filter: contrast(1.08) brightness(0.9) saturate(0.85) sepia(0.1);
+            filter: contrast(1.1) brightness(0.88) saturate(0.85) sepia(0.08);
         }
 
         /* Ambient VHS / Screen Overlays */
@@ -32,8 +32,9 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.8) 100%);
+            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.85) 100%);
             z-index: 5;
+            transition: background-color 0.4s ease;
         }
 
         #vhs-lines {
@@ -43,7 +44,7 @@
             pointer-events: none;
             background: linear-gradient(
                 rgba(18, 16, 16, 0) 50%, 
-                rgba(0, 0, 0, 0.15) 50%
+                rgba(0, 0, 0, 0.18) 50%
             );
             background-size: 100% 4px;
             z-index: 6;
@@ -55,7 +56,7 @@
             top: -50%; left: -50%;
             width: 200%; height: 200%;
             pointer-events: none;
-            opacity: 0.08;
+            opacity: 0.09;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
             animation: grain-jump 0.15s steps(2) infinite;
             z-index: 7;
@@ -205,7 +206,7 @@
             border-radius: 4px;
             margin-bottom: 30px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
         }
 
         .menu-label {
@@ -239,7 +240,7 @@
             cursor: pointer;
             transition: all 0.2s ease-in-out;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
         }
 
         .btn-start:hover {
@@ -275,13 +276,16 @@
 <body>
     <div id="intro-screen">
         <div class="title">THE LIMINAL COMPLEX</div>
-        <div class="subtitle">PROCEDURAL ENGINE v3.0</div>
+        <div class="subtitle">PROCEDURAL ENGINE v4.0</div>
         
         <div class="selection-box">
             <div class="menu-label">SELECT DESTINATION:</div>
             <select id="level-select" class="menu-select">
                 <option value="lobby">LEVEL 0: THE LOBBY (Wallpaper, Voids & Pit)</option>
+                <option value="level1">LEVEL 1: HABITABLE ZONE (Parking Structure & Pillars)</option>
+                <option value="level2">LEVEL 2: PIPE DREAMS (Endless Industrial Corridor)</option>
                 <option value="pool">LEVEL 37: THE POOLROOMS (Columns, Tiles & Stairs)</option>
+                <option value="level7">LEVEL 7: THALASSOPHOBIA (Submerged Ocean & Ceiling Grid)</option>
                 <option value="hills">LEVEL 55: MINDLESS HILLS (Rolling Slopes, Fog & Eerie Houses)</option>
             </select>
 
@@ -296,6 +300,7 @@
         
         <div class="controls-info">
             DESKTOP: WASD or Arrows to Move | Mouse to Look | SHIFT to Run<br>
+            LEVEL 7: Look Pitch determines swimming elevation direction<br>
             MOBILE: Left drag Joystick | Right side of screen to Look | Tap RUN<br>
             <em>Click inside window to lock mouse. Interaction activates synthesizers.</em>
         </div>
@@ -384,6 +389,22 @@
 
         // --- 2. Advanced Procedural Textures ---
         
+        // Lens Flare / Radial Light Glow Texture
+        function createLightGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.15, 'rgba(255, 245, 220, 0.7)');
+            grad.addColorStop(0.4, 'rgba(240, 200, 140, 0.2)');
+            grad.addColorStop(0.8, 'rgba(200, 150, 100, 0.03)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
         // Level 0 Wallpaper (Retro Yellowish Chevrons)
         function createLobbyWallTexture() {
             const canvas = document.createElement('canvas');
@@ -439,6 +460,88 @@
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.ClampToEdgeWrapping;
+            return tex;
+        }
+
+        // Level 1 Concrete Texture
+        function createParkingConcreteTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#656561'; 
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Concrete granular dirt
+            const imgData = ctx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const grain = (Math.random() - 0.5) * 32;
+                data[i] = Math.min(255, Math.max(0, data[i] + grain));
+                data[i+1] = Math.min(255, Math.max(0, data[i+1] + grain));
+                data[i+2] = Math.min(255, Math.max(0, data[i+2] + grain));
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            // Stains & oil leakage patterns
+            ctx.fillStyle = 'rgba(38, 38, 32, 0.45)';
+            for (let i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 60 + 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Yellow caution stripes
+            ctx.strokeStyle = 'rgba(180, 145, 45, 0.28)';
+            ctx.lineWidth = 14;
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * 150 + 20, 0);
+                ctx.lineTo(i * 150 - 60, 512);
+                ctx.stroke();
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        // Level 2 Pipe Industrial Panels & Oxidation Rust
+        function createPipeCorridorTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#4c4944'; 
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Metal seams
+            ctx.strokeStyle = '#2b2926';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(0, 0, 512, 512);
+            ctx.strokeRect(256, 0, 256, 512);
+            ctx.strokeRect(0, 256, 512, 256);
+
+            // Corrosive textures
+            const imgData = ctx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 20;
+                const isRust = Math.random() < 0.08 ? 32 : 0;
+                data[i] = Math.min(255, Math.max(0, data[i] + noise + isRust * 1.6));
+                data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise + isRust * 0.8));
+                data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise + isRust * 0.3));
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            // Runoff grime streaks
+            ctx.fillStyle = 'rgba(40, 25, 10, 0.3)';
+            for (let i = 0; i < 6; i++) {
+                ctx.fillRect(Math.random() * 512, 0, Math.random() * 30 + 10, 512);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
             return tex;
         }
 
@@ -585,16 +688,19 @@
         
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 0.82;
+        renderer.toneMappingExposure = 0.85;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Environment materials mapping
+        // Environment textures mapping
         const lobbyWallTex = createLobbyWallTexture();
         const poolTileTex = createPoolroomsTileTexture();
         const carpetTex = createCarpetTexture();
         const ceilingTex = createCeilingTexture();
         const grassTex = createGrassTexture();
         const waterHeightTex = createWaterHeightMap();
+        const concreteWallTex = createParkingConcreteTexture();
+        const pipeCorridorTex = createPipeCorridorTexture();
+        const lightGlowTex = createLightGlowTexture();
 
         let activeWallMat, activeFloorMat, activeCeilingMat;
         let waterPlane = null;
@@ -603,10 +709,10 @@
         // Level 55 Terrain Height Calculator
         function getTerrainHeight(x, z) {
             if (CURRENT_LEVEL !== "hills") return 1.6;
-            // Generate rolling dreamcore hills using overlapping sine/cosine waves
+            // Overlapping mathematical dreamcore hills
             return Math.sin(x * 0.06) * Math.cos(z * 0.06) * 4.2 + 
                    Math.sin(x * 0.12) * 1.2 + 
-                   Math.cos(z * 0.18) * 0.6 + 1.6; // 1.6 is baseline camera height
+                   Math.cos(z * 0.18) * 0.6 + 1.6;
         }
 
         function configureLevelMaterials() {
@@ -631,8 +737,7 @@
                 });
                 ceilingTex.repeat.set(MAP_SIZE * 2, MAP_SIZE * 2);
 
-                // --- 3A. LEVEL 0 STRUCTURAL ELEMENTS (Stairs, Voids, Pillars) ---
-                // Skip floor and build vertical pit at spawn area
+                // --- LEVEL 0 STRUCTURAL ELEMENTS (Stairs, Voids, Pillars) ---
                 const floorGeo = new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4, MAP_SIZE, MAP_SIZE);
                 floorGeo.rotateX(-Math.PI / 2);
                 
@@ -640,11 +745,10 @@
                 for (let i = 0; i < posArr.count; i++) {
                     const px = posArr.getX(i);
                     const pz = posArr.getZ(i);
-                    // Drop coordinates inside the pit block
                     const gx = (px + 2) / 4;
                     const gz = (pz + 2) / 4;
                     if (gx >= pitMinX && gx <= pitMaxX && gz >= pitMinY && gz <= pitMaxY) {
-                        posArr.setY(i, -5.0); // Create dropped floor
+                        posArr.setY(i, -5.0); // Shift dropped floor down
                     }
                 }
                 floorGeo.computeVertexNormals();
@@ -653,22 +757,21 @@
                 floorMesh.position.set((MAP_SIZE * 4) / 2 - 2, 0, (MAP_SIZE * 4) / 2 - 2);
                 scene.add(floorMesh);
 
-                // Simple wall surrounds for the drop pit
+                // Wall surrounds for the drop pit
                 const pitWallGeo = new THREE.BoxGeometry(4, 5, 0.2);
-                const pitWallMat = activeWallMat;
                 for (let wx = pitMinX; wx <= pitMaxX; wx++) {
-                    const wall = new THREE.Mesh(pitWallGeo, pitWallMat);
+                    const wall = new THREE.Mesh(pitWallGeo, activeWallMat);
                     wall.position.set(wx * 4, -2.5, pitMinY * 4 - 2);
                     scene.add(wall);
                 }
 
-                // Ceiling plane remains flat above
+                // Flat ceiling overhead
                 const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeCeilingMat);
                 ceiling.rotation.x = Math.PI / 2;
                 ceiling.position.set((MAP_SIZE * 4) / 2 - 2, 3.5, (MAP_SIZE * 4) / 2 - 2);
                 scene.add(ceiling);
 
-                // Scaffold yellow square pillars scattered across the grid
+                // Scattered columns
                 const pillarGeo = new THREE.BoxGeometry(1.6, 3.5, 1.6);
                 for (let i = 0; i < 18; i++) {
                     const px = Math.floor(Math.random() * (MAP_SIZE - 4)) + 2;
@@ -677,6 +780,123 @@
                         const pillar = new THREE.Mesh(pillarGeo, activeWallMat);
                         pillar.position.set(px * 4, 1.75, py * 4);
                         scene.add(pillar);
+                    }
+                }
+
+            } else if (CURRENT_LEVEL === "level1") {
+                scene.fog = new THREE.FogExp2('#151814', 0.08);
+                renderer.setClearColor('#151814');
+                document.getElementById('hud-level-tag').textContent = "HABITABLE_ZONE_REC";
+
+                activeWallMat = new THREE.MeshStandardMaterial({
+                    map: concreteWallTex, roughness: 0.72, metalness: 0.15,
+                    bumpMap: concreteWallTex, bumpScale: 0.012
+                });
+                concreteWallTex.repeat.set(1.5, 1.5);
+
+                activeFloorMat = new THREE.MeshStandardMaterial({
+                    map: concreteWallTex, roughness: 0.65, metalness: 0.12,
+                    bumpMap: concreteWallTex, bumpScale: 0.008
+                });
+
+                activeCeilingMat = new THREE.MeshStandardMaterial({
+                    color: 0x3d3d3a, roughness: 0.85, metalness: 0.1
+                });
+
+                // Flat ceiling and floor planes
+                const floor = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeFloorMat);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.set((MAP_SIZE * 4) / 2 - 2, 0, (MAP_SIZE * 4) / 2 - 2);
+                scene.add(floor);
+
+                const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeCeilingMat);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.position.set((MAP_SIZE * 4) / 2 - 2, 3.0, (MAP_SIZE * 4) / 2 - 2);
+                scene.add(ceiling);
+
+                // Giant concrete support structures
+                const supportGeo = new THREE.BoxGeometry(2.4, 3.0, 2.4);
+                for (let i = 0; i < 15; i++) {
+                    const px = Math.floor(Math.random() * (MAP_SIZE - 4)) + 2;
+                    const py = Math.floor(Math.random() * (MAP_SIZE - 4)) + 2;
+                    if (grid[py][px] === 0) {
+                        const column = new THREE.Mesh(supportGeo, activeWallMat);
+                        column.position.set(px * 4, 1.5, py * 4);
+                        scene.add(column);
+                    }
+                }
+
+                // Ceiling conduit layout
+                const pipeGeo = new THREE.CylinderGeometry(0.1, 0.1, MAP_SIZE * 4);
+                pipeGeo.rotateZ(Math.PI / 2);
+                const pipeMat = new THREE.MeshStandardMaterial({ color: 0x484844, roughness: 0.35, metalness: 0.8 });
+                for (let i = 3; i < MAP_SIZE; i += 7) {
+                    const conduit = new THREE.Mesh(pipeGeo, pipeMat);
+                    conduit.position.set((MAP_SIZE * 4) / 2 - 2, 2.85, i * 4);
+                    scene.add(conduit);
+                }
+
+            } else if (CURRENT_LEVEL === "level2") {
+                scene.fog = new THREE.FogExp2('#1f150d', 0.09);
+                renderer.setClearColor('#1f150d');
+                document.getElementById('hud-level-tag').textContent = "PIPE_DREAMS_REC";
+
+                activeWallMat = new THREE.MeshStandardMaterial({
+                    map: pipeCorridorTex, roughness: 0.52, metalness: 0.42,
+                    bumpMap: pipeCorridorTex, bumpScale: 0.015
+                });
+                pipeCorridorTex.repeat.set(1.0, 1.0);
+
+                activeFloorMat = activeWallMat;
+                activeCeilingMat = new THREE.MeshStandardMaterial({ color: 0x24201c, roughness: 0.88 });
+
+                // Construct industrial flat boundaries
+                const floor = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeFloorMat);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.set((MAP_SIZE * 4) / 2 - 2, 0, (MAP_SIZE * 4) / 2 - 2);
+                scene.add(floor);
+
+                const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeCeilingMat);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.position.set((MAP_SIZE * 4) / 2 - 2, 3.2, (MAP_SIZE * 4) / 2 - 2);
+                scene.add(ceiling);
+
+                // Massive industrial lines running parallel to corridor channels
+                const pipeRustMat1 = new THREE.MeshStandardMaterial({ color: 0x823b1e, roughness: 0.55, metalness: 0.7 });
+                const pipeRustMat2 = new THREE.MeshStandardMaterial({ color: 0xad5b1f, roughness: 0.45, metalness: 0.85 });
+                
+                const geoCorridorZ = new THREE.CylinderGeometry(0.14, 0.14, 4.0);
+                geoCorridorZ.rotateX(Math.PI / 2);
+                const geoCorridorX = new THREE.CylinderGeometry(0.14, 0.14, 4.0);
+                geoCorridorX.rotateZ(Math.PI / 2);
+
+                for (let y = 1; y < MAP_SIZE - 1; y++) {
+                    for (let x = 1; x < MAP_SIZE - 1; x++) {
+                        if (grid[y][x] === 1) {
+                            if (grid[y][x + 1] === 0) {
+                                const p1 = new THREE.Mesh(geoCorridorZ, pipeRustMat1);
+                                p1.position.set(x * 4 + 2.08, 1.2, y * 4);
+                                scene.add(p1);
+                                const p2 = new THREE.Mesh(geoCorridorZ, pipeRustMat2);
+                                p2.position.set(x * 4 + 2.12, 2.2, y * 4);
+                                scene.add(p2);
+                            }
+                            if (grid[y][x - 1] === 0) {
+                                const p1 = new THREE.Mesh(geoCorridorZ, pipeRustMat2);
+                                p1.position.set(x * 4 - 2.08, 1.4, y * 4);
+                                scene.add(p1);
+                            }
+                            if (grid[y + 1][x] === 0) {
+                                const p1 = new THREE.Mesh(geoCorridorX, pipeRustMat1);
+                                p1.position.set(x * 4, 0.9, y * 4 + 2.08);
+                                scene.add(p1);
+                            }
+                            if (grid[y - 1][x] === 0) {
+                                const p1 = new THREE.Mesh(geoCorridorX, pipeRustMat2);
+                                p1.position.set(x * 4, 1.9, y * 4 - 2.08);
+                                scene.add(p1);
+                            }
+                        }
                     }
                 }
 
@@ -699,28 +919,23 @@
                     map: poolTileTex, roughness: 0.35, metalness: 0.0
                 });
 
-                // Flat floor plane
+                // Flat planes
                 const floor = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeFloorMat);
                 floor.rotation.x = -Math.PI / 2;
                 floor.position.set((MAP_SIZE * 4) / 2 - 2, 0, (MAP_SIZE * 4) / 2 - 2);
                 scene.add(floor);
 
-                // Ceiling plane
                 const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4), activeCeilingMat);
                 ceiling.rotation.x = Math.PI / 2;
                 ceiling.position.set((MAP_SIZE * 4) / 2 - 2, 3.8, (MAP_SIZE * 4) / 2 - 2);
                 scene.add(ceiling);
 
-                // Overlaid moving water plane
+                // Water layer
                 const waterGeo = new THREE.PlaneGeometry(MAP_SIZE * 4, MAP_SIZE * 4);
                 const waterMat = new THREE.MeshStandardMaterial({
-                    color: 0x39cce0,
-                    roughness: 0.05,
-                    metalness: 0.15,
-                    transparent: true,
-                    opacity: 0.65,
-                    bumpMap: waterHeightTex,
-                    bumpScale: 0.03
+                    color: 0x39cce0, roughness: 0.05, metalness: 0.15,
+                    transparent: true, opacity: 0.65,
+                    bumpMap: waterHeightTex, bumpScale: 0.03
                 });
                 waterHeightTex.repeat.set(20, 20);
 
@@ -729,13 +944,11 @@
                 waterPlane.position.set((MAP_SIZE * 4) / 2 - 2, 0.3, (MAP_SIZE * 4) / 2 - 2);
                 scene.add(waterPlane);
 
-                // --- 3B. LEVEL 37 STRUCTURES (Columns & Spiral Stairs) ---
-                // Giant rounded tiled columns
+                // Pillars & circular spiral staircase
                 const colGeo = new THREE.CylinderGeometry(1.2, 1.2, 3.8, 20);
                 for (let i = 0; i < 14; i++) {
                     const cx = (Math.random() * (MAP_SIZE - 4) + 2) * 4;
                     const cz = (Math.random() * (MAP_SIZE - 4) + 2) * 4;
-                    // Do not spawn on player coordinate
                     if (Math.hypot(cx - spawnX * 4, cz - spawnY * 4) > 8) {
                         const col = new THREE.Mesh(colGeo, activeWallMat);
                         col.position.set(cx, 1.9, cz);
@@ -743,7 +956,6 @@
                     }
                 }
 
-                // Classic circular spiral staircase plunging into water
                 const stairsGroup = new THREE.Group();
                 const stepGeo = new THREE.BoxGeometry(2.4, 0.22, 0.7);
                 const centerColGeo = new THREE.CylinderGeometry(0.4, 0.4, 4.0, 12);
@@ -761,9 +973,61 @@
                 stairsGroup.position.set(spawnX * 4 + 8, -0.2, spawnY * 4 + 8);
                 scene.add(stairsGroup);
 
+            } else if (CURRENT_LEVEL === "level7") {
+                scene.fog = new THREE.FogExp2('#040b12', 0.04);
+                renderer.setClearColor('#040b12');
+                document.getElementById('hud-level-tag').textContent = "THALASSOPHOBIA_REC";
+
+                // Flat modular industrial steel panel ceiling
+                const steelCeilTex = createPipeCorridorTexture();
+                activeCeilingMat = new THREE.MeshStandardMaterial({ map: steelCeilTex, roughness: 0.65 });
+                steelCeilTex.repeat.set(16, 16);
+
+                const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 8, MAP_SIZE * 8), activeCeilingMat);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.position.set(spawnX * 4, 8.0, spawnY * 4);
+                scene.add(ceiling);
+
+                // Absolute ocean dark abyss bed floor
+                const sandyFloorMat = new THREE.MeshStandardMaterial({ color: 0x010305, roughness: 0.95 });
+                const oceanBed = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE * 8, MAP_SIZE * 8), sandyFloorMat);
+                oceanBed.rotation.x = -Math.PI / 2;
+                oceanBed.position.set(spawnX * 4, -22.0, spawnY * 4);
+                scene.add(oceanBed);
+
+                // Volumetric surface water plane
+                const waterGeo = new THREE.PlaneGeometry(MAP_SIZE * 8, MAP_SIZE * 8);
+                const waterMat = new THREE.MeshStandardMaterial({
+                    color: 0x0a1e28, roughness: 0.08, metalness: 0.85,
+                    transparent: true, opacity: 0.65,
+                    bumpMap: waterHeightTex, bumpScale: 0.06,
+                    side: THREE.DoubleSide
+                });
+                waterHeightTex.repeat.set(30, 30);
+
+                waterPlane = new THREE.Mesh(waterGeo, waterMat);
+                waterPlane.rotation.x = -Math.PI / 2;
+                waterPlane.position.set(spawnX * 4, 0.0, spawnY * 4);
+                scene.add(waterPlane);
+
+                // Underwater bubble system
+                const particleCount = 250;
+                const particleGeo = new THREE.BufferGeometry();
+                const coordsArr = new Float32Array(particleCount * 3);
+                for (let i = 0; i < particleCount * 3; i += 3) {
+                    coordsArr[i] = Math.random() * 100 - 50 + spawnX * 4;
+                    coordsArr[i+1] = Math.random() * 20 - 21.0;
+                    coordsArr[i+2] = Math.random() * 100 - 50 + spawnY * 4;
+                }
+                particleGeo.setAttribute('position', new THREE.BufferAttribute(coordsArr, 3));
+                const particleMat = new THREE.PointsMaterial({
+                    color: 0x6bb8d1, size: 0.16, transparent: true, opacity: 0.45
+                });
+                const bubbles = new THREE.Points(particleGeo, particleMat);
+                scene.add(bubbles);
+
             } else if (CURRENT_LEVEL === "hills") {
-                // --- 3C. LEVEL 55 STRUCTURES (Hills, Sky, Fences & Eerie Yellow Houses) ---
-                scene.fog = new THREE.FogExp2('#9fa896', 0.016); // Dense dreamcore pale mist
+                scene.fog = new THREE.FogExp2('#9fa896', 0.016);
                 renderer.setClearColor('#9fa896');
                 document.getElementById('hud-level-tag').textContent = "HILLS_55_REC";
 
@@ -772,7 +1036,6 @@
                 });
                 grassTex.repeat.set(30, 30);
 
-                // Generate undulating terrain mesh
                 const terrainSize = 180;
                 terrainGeom = new THREE.PlaneGeometry(terrainSize, terrainSize, 64, 64);
                 terrainGeom.rotateX(-Math.PI / 2);
@@ -789,25 +1052,19 @@
                 terrainMesh.position.set(spawnX * 4, 0, spawnY * 4);
                 scene.add(terrainMesh);
 
-                // Add stylized eerie yellow houses scattered over the terrain
-                const houseGroup = new THREE.Group();
+                // Houses scattered over the terrain
                 const numHouses = 14;
-
                 for (let i = 0; i < numHouses; i++) {
                     const hx = (Math.random() - 0.5) * 130 + spawnX * 4;
                     const hz = (Math.random() - 0.5) * 130 + spawnY * 4;
                     
-                    // Prevent spawning directly on the player
                     if (Math.hypot(hx - spawnX * 4, hz - spawnY * 4) > 14) {
                         const height = getTerrainHeight(hx, hz) - 1.6;
                         const singleHouse = buildEerieHouse();
                         singleHouse.position.set(hx, height, hz);
-                        
-                        // Rotate randomly to face directions
                         singleHouse.rotation.y = Math.random() * Math.PI * 2;
                         scene.add(singleHouse);
 
-                        // Randomly place a short picket fence near houses
                         if (Math.random() > 0.4) {
                             const fence = buildPicketFence();
                             fence.position.set(hx + 3, height, hz + 3);
@@ -817,19 +1074,17 @@
                     }
                 }
 
-                // Add a surreal water tower in the distance
                 const tower = buildWaterTower();
                 tower.position.set(spawnX * 4 + 40, getTerrainHeight(spawnX * 4 + 40, spawnY * 4 - 40) - 1.6, spawnY * 4 - 40);
                 scene.add(tower);
 
-                // Build warning road sign
                 const sign = buildRoadSign();
                 sign.position.set(spawnX * 4 - 5, getTerrainHeight(spawnX * 4 - 5, spawnY * 4 + 5) - 1.6, spawnY * 4 + 5);
                 scene.add(sign);
             }
 
-            // OPTIMIZATION: Use InstancedMesh to draw grid walls in a single draw call (if not on Hills level)
-            if (CURRENT_LEVEL !== "hills") {
+            // Draw grid walls via dynamic single draw-calls (skipped in open-world levels)
+            if (CURRENT_LEVEL !== "hills" && CURRENT_LEVEL !== "level7") {
                 let wallCount = 0;
                 for (let y = 0; y < MAP_SIZE; y++) {
                     for (let x = 0; x < MAP_SIZE; x++) {
@@ -837,7 +1092,7 @@
                     }
                 }
 
-                const wallGeo = new THREE.BoxGeometry(4, 3.8, 4);
+                const wallGeo = new THREE.BoxGeometry(4, CURRENT_LEVEL === 'level2' ? 3.2 : CURRENT_LEVEL === 'level1' ? 3.0 : 3.8, 4);
                 const instancedWalls = new THREE.InstancedMesh(wallGeo, activeWallMat, wallCount);
                 let idx = 0;
                 const dummy = new THREE.Object3D();
@@ -845,7 +1100,8 @@
                 for (let y = 0; y < MAP_SIZE; y++) {
                     for (let x = 0; x < MAP_SIZE; x++) {
                         if (grid[y][x] === 1) {
-                            dummy.position.set(x * 4, 1.9, y * 4);
+                            const h = CURRENT_LEVEL === 'level2' ? 1.6 : CURRENT_LEVEL === 'level1' ? 1.5 : 1.9;
+                            dummy.position.set(x * 4, h, y * 4);
                             dummy.updateMatrix();
                             instancedWalls.setMatrixAt(idx++, dummy.matrix);
                         }
@@ -855,18 +1111,15 @@
             }
         }
 
-        // Helper: Procedural House Builder (Weirdcore/Dreamcore style)
+        // Helper: Procedural House Builder
         function buildEerieHouse() {
             const group = new THREE.Group();
-            
-            // House structure body
             const bodyGeo = new THREE.BoxGeometry(5, 5, 5);
             const bodyMat = new THREE.MeshStandardMaterial({ color: '#f5eaad', roughness: 0.9 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 2.5;
             group.add(body);
 
-            // House roof (creepy dark triangular prism cone)
             const roofGeo = new THREE.ConeGeometry(4.2, 3, 4);
             roofGeo.rotateY(Math.PI / 4);
             const roofMat = new THREE.MeshStandardMaterial({ color: '#564d42', roughness: 0.95 });
@@ -874,7 +1127,6 @@
             roof.position.y = 5.0 + 1.5;
             group.add(roof);
 
-            // Blank hollow dark windows
             const winGeo = new THREE.PlaneGeometry(0.8, 1.1);
             const winMat = new THREE.MeshBasicMaterial({ color: '#111111' });
 
@@ -886,21 +1138,6 @@
             winF2.position.set(1.3, 3.2, 2.51);
             group.add(winF2);
 
-            const winF3 = new THREE.Mesh(winGeo, winMat);
-            winF3.position.set(-1.3, 1.2, 2.51);
-            group.add(winF3);
-
-            const winF4 = new THREE.Mesh(winGeo, winMat);
-            winF4.position.set(1.3, 1.2, 2.51);
-            group.add(winF4);
-
-            // Back window
-            const winB1 = new THREE.Mesh(winGeo, winMat);
-            winB1.position.set(0, 2.8, -2.51);
-            winB1.rotation.y = Math.PI;
-            group.add(winB1);
-
-            // Symmetrical simple wooden door
             const doorGeo = new THREE.PlaneGeometry(1.2, 2.2);
             const doorMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 });
             const door = new THREE.Mesh(doorGeo, doorMat);
@@ -917,7 +1154,6 @@
             const railGeo = new THREE.BoxGeometry(4.0, 0.1, 0.04);
             const fenceMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.8 });
 
-            // Horizontal rails
             const railTop = new THREE.Mesh(railGeo, fenceMat);
             railTop.position.set(2, 0.8, 0);
             group.add(railTop);
@@ -926,13 +1162,11 @@
             railBottom.position.set(2, 0.3, 0);
             group.add(railBottom);
 
-            // Vertical posts
             for (let i = 0; i < 9; i++) {
                 const post = new THREE.Mesh(postGeo, fenceMat);
                 post.position.set(i * 0.5, 0.55, 0.02);
                 group.add(post);
             }
-
             return group;
         }
 
@@ -941,19 +1175,16 @@
             const group = new THREE.Group();
             const metalMat = new THREE.MeshStandardMaterial({ color: '#d0d8db', roughness: 0.4, metalness: 0.5 });
             
-            // Core reservoir sphere
             const sphereGeo = new THREE.SphereGeometry(3.5, 16, 16);
             const reservoir = new THREE.Mesh(sphereGeo, metalMat);
             reservoir.position.y = 12.0;
             group.add(reservoir);
 
-            // Central column pipe
             const columnGeo = new THREE.CylinderGeometry(0.6, 0.6, 12.0, 8);
             const column = new THREE.Mesh(columnGeo, metalMat);
             column.position.y = 6.0;
             group.add(column);
 
-            // Support legs
             const legGeo = new THREE.CylinderGeometry(0.15, 0.15, 12.2, 8);
             for (let i = 0; i < 4; i++) {
                 const angle = (i * Math.PI) / 2;
@@ -963,11 +1194,10 @@
                 leg.rotation.x = Math.sin(angle) * 0.15;
                 group.add(leg);
             }
-
             return group;
         }
 
-        // Helper: Curved Warning Road Sign
+        // Helper: Warning Road Sign
         function buildRoadSign() {
             const group = new THREE.Group();
             const postGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.5, 8);
@@ -979,26 +1209,21 @@
             post.position.y = 1.25;
             group.add(post);
 
-            // Round border sign
             const borderMat = new THREE.MeshStandardMaterial({ color: '#e62222', roughness: 0.5 });
             const plate = new THREE.Mesh(signGeo, borderMat);
             plate.position.set(0, 2.4, 0.05);
             group.add(plate);
 
-            // Sign center plate
             const innerGeo = new THREE.CylinderGeometry(0.52, 0.52, 0.06, 16);
             innerGeo.rotateX(Math.PI / 2);
-            const innerMat = new THREE.MeshBasicMaterial({ color: '#ffffff' });
-            const innerPlate = new THREE.Mesh(innerGeo, innerMat);
+            const innerPlate = new THREE.Mesh(innerGeo, new THREE.MeshBasicMaterial({ color: '#ffffff' }));
             innerPlate.position.set(0, 2.4, 0.06);
             group.add(innerPlate);
 
-            // Arrow logic
             const arrowGeo = new THREE.BoxGeometry(0.4, 0.15, 0.01);
-            const arrowMat = new THREE.MeshBasicMaterial({ color: '#111111' });
-            const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+            const arrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: '#111111' }));
             arrow.position.set(0, 2.4, 0.1);
-            arrow.rotation.z = Math.PI / 4; // Turn indicator
+            arrow.rotation.z = Math.PI / 4;
             group.add(arrow);
 
             return group;
@@ -1016,7 +1241,6 @@
         let yaw = 0, pitch = 0;
         const keys = { w: false, a: false, s: false, d: false, shift: false };
 
-        // Desktop keyboard event handlers
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'w' || key === 'arrowup') keys.w = true;
@@ -1035,14 +1259,12 @@
             if (!e.shiftKey) keys.shift = false;
         });
 
-        // Click wrapper to re-request pointer lock
         document.addEventListener('click', () => {
             if (document.getElementById('intro-screen').style.display === 'none' && !isMobile) {
                 document.body.requestPointerLock();
             }
         });
 
-        // Look interaction
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === document.body) {
                 yaw -= e.movementX * 0.0022;
@@ -1058,7 +1280,7 @@
             camera.rotateX(pitch);
         }
 
-        // Mobile joystick and touch interaction
+        // Mobile joystick handling
         let isMobile = false;
         const mobileJoyVec = { x: 0, y: 0 };
         let joyActive = false;
@@ -1115,7 +1337,6 @@
             }
         }, { passive: true });
 
-        // Touch Swipe-Look (Right viewport tracking)
         let lookTouchId = null;
         let lookLastPos = { x: 0, y: 0 };
 
@@ -1159,19 +1380,28 @@
             sprintBtn.style.backgroundColor = mobileSprinting ? "rgba(235, 220, 167, 0.45)" : "rgba(255, 255, 255, 0.08)";
         });
 
-        // Basic wall collision solver
+        // Safe Containment Collision Checker
         function checkCollisions(newPos) {
-            if (CURRENT_LEVEL === "hills") return false; // Infinite rolling hills exploration bounds
+            if (CURRENT_LEVEL === "hills" || CURRENT_LEVEL === "level7") return false; 
             
             const r = player.radius;
             const testOffsets = [{ x:-r, z:-r }, { x:r, z:-r }, { x:-r, z:r }, { x:r, z:r }, { x:0, z:0 }];
             
             for (let offset of testOffsets) {
-                const gx = Math.round((newPos.x + offset.x) / 4);
-                const gz = Math.round((newPos.z + offset.z) / 4);
+                const tx = newPos.x + offset.x;
+                const tz = newPos.z + offset.z;
                 
-                if (gx < 0 || gx >= MAP_SIZE || gz < 0 || gz >= MAP_SIZE) return true;
-                if (grid[gz][gx] === 1) return true;
+                // Keep strictly inside inner walls
+                if (tx < 1.0 || tx > (MAP_SIZE * 4 - 1.0) || tz < 1.0 || tz > (MAP_SIZE * 4 - 1.0)) {
+                    return true;
+                }
+                
+                const gx = Math.round(tx / 4);
+                const gz = Math.round(tz / 4);
+                
+                if (gx >= 0 && gx < MAP_SIZE && gz >= 0 && gz < MAP_SIZE) {
+                    if (grid[gz][gx] === 1) return true;
+                }
             }
             return false;
         }
@@ -1179,77 +1409,159 @@
         let bobTimer = 0;
         function updatePlayerPhysics(dt) {
             const moveDir = new THREE.Vector3();
-            
-            if (isMobile) {
-                moveDir.z = mobileJoyVec.y;
-                moveDir.x = mobileJoyVec.x;
-            } else {
-                if (keys.w) moveDir.z -= 1;
-                if (keys.s) moveDir.z += 1;
-                if (keys.a) moveDir.x -= 1;
-                if (keys.d) moveDir.x += 1;
-                moveDir.normalize();
-            }
-            
-            const rotEuler = new THREE.Euler(0, yaw, 0, 'YXZ');
-            moveDir.applyEuler(rotEuler);
-            
             const sprintMultiplier = (isMobile ? mobileSprinting : keys.shift) ? 1.6 : 1.0;
-            const targetVel = moveDir.multiplyScalar(player.speed * sprintMultiplier);
-            
-            player.velocity.lerp(targetVel, 9 * dt);
-            
-            // X & Z movement slide calculations
-            const testX = player.pos.clone().add(new THREE.Vector3(player.velocity.x * dt, 0, 0));
-            if (!checkCollisions(testX)) {
-                player.pos.x = testX.x;
-            } else {
-                player.velocity.x = 0;
-            }
-            
-            const testZ = player.pos.clone().add(new THREE.Vector3(0, 0, player.velocity.z * dt));
-            if (!checkCollisions(testZ)) {
-                player.pos.z = testZ.z;
-            } else {
-                player.velocity.z = 0;
-            }
 
-            // Ground elevation solver (adapt to hills)
-            let baseHeight = 1.6;
-            if (CURRENT_LEVEL === "hills") {
-                baseHeight = getTerrainHeight(player.pos.x, player.pos.z);
-            } else if (CURRENT_LEVEL === "lobby") {
-                // Drop camera into pit coordinates
-                const curGx = Math.round(player.pos.x / 4);
-                const curGz = Math.round(player.pos.z / 4);
-                if (curGx >= pitMinX && curGx <= pitMaxX && curGz >= pitMinY && curGz <= pitMaxY) {
-                    baseHeight = -3.4; // eye-level inside floor pit drop
+            // LEVEL 7 swimming translation
+            if (CURRENT_LEVEL === "level7") {
+                const swimEuler = new THREE.Euler(pitch, yaw, 0, 'YXZ');
+                const swimDir = new THREE.Vector3();
+                if (isMobile) {
+                    swimDir.z = mobileJoyVec.y;
+                    swimDir.x = mobileJoyVec.x;
+                } else {
+                    if (keys.w) swimDir.z -= 1;
+                    if (keys.s) swimDir.z += 1;
+                    if (keys.a) swimDir.x -= 1;
+                    if (keys.d) swimDir.x += 1;
+                    swimDir.normalize();
                 }
-            }
-            
-            // Camera head bob mechanics
-            const isMoving = isMobile ? (Math.hypot(mobileJoyVec.x, mobileJoyVec.y) > 0.15) : (keys.w || keys.s || keys.a || keys.d);
-            if (isMoving && Math.abs(player.velocity.length()) > 0.15) {
-                const bobFreq = (isMobile ? mobileSprinting : keys.shift) ? 14 : 9;
-                bobTimer += dt * bobFreq;
-                const bobHeight = Math.sin(bobTimer) * ((isMobile ? mobileSprinting : keys.shift) ? 0.08 : 0.04);
-                player.pos.y = THREE.MathUtils.lerp(player.pos.y, baseHeight, 10 * dt);
+                swimDir.applyEuler(swimEuler);
+
+                // Fluid resistance dampening
+                const swimSpeed = 3.2 * sprintMultiplier;
+                player.velocity.lerp(swimDir.multiplyScalar(swimSpeed), 4.5 * dt);
+                player.pos.addScaledVector(player.velocity, dt);
+
+                // Water depth constraints
+                if (player.pos.y > 7.1) player.pos.y = 7.1;
+                if (player.pos.y < -21.2) player.pos.y = -21.2;
+
+                const borderLimit = MAP_SIZE * 4 - 4;
+                player.pos.x = THREE.MathUtils.clamp(player.pos.x, 4, borderLimit);
+                player.pos.z = THREE.MathUtils.clamp(player.pos.z, 4, borderLimit);
+
                 camera.position.copy(player.pos);
-                camera.position.y += bobHeight;
+
+                // Underwater visuals trigger
+                if (player.pos.y < 0.0) {
+                    scene.fog.color.setHex(0x02070d);
+                    scene.fog.density = 0.12;
+                    renderer.setClearColor('#02070d');
+                    document.getElementById('overlay').style.backgroundColor = 'rgba(10, 36, 56, 0.35)';
+                    if (staticGainNode && audioCtx) {
+                        staticGainNode.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.1);
+                    }
+                } else {
+                    scene.fog.color.setHex(0x040b12);
+                    scene.fog.density = 0.04;
+                    renderer.setClearColor('#040b12');
+                    document.getElementById('overlay').style.backgroundColor = 'rgba(0,0,0,0)';
+                    if (staticGainNode && audioCtx) {
+                        staticGainNode.gain.setTargetAtTime(0.015, audioCtx.currentTime, 0.1);
+                    }
+                }
             } else {
-                bobTimer = 0;
+                // Standard land structures
+                if (isMobile) {
+                    moveDir.z = mobileJoyVec.y;
+                    moveDir.x = mobileJoyVec.x;
+                } else {
+                    if (keys.w) moveDir.z -= 1;
+                    if (keys.s) moveDir.z += 1;
+                    if (keys.a) moveDir.x -= 1;
+                    if (keys.d) moveDir.x += 1;
+                    moveDir.normalize();
+                }
+                
+                const rotEuler = new THREE.Euler(0, yaw, 0, 'YXZ');
+                moveDir.applyEuler(rotEuler);
+                
+                const targetVel = moveDir.multiplyScalar(player.speed * sprintMultiplier);
+                player.velocity.lerp(targetVel, 9 * dt);
+                
+                // Physics sub-stepping loops to prevent clipping
+                const subSteps = 3;
+                const subDt = dt / subSteps;
+                for (let s = 0; s < subSteps; s++) {
+                    const testX = player.pos.clone().add(new THREE.Vector3(player.velocity.x * subDt, 0, 0));
+                    if (!checkCollisions(testX)) {
+                        player.pos.x = testX.x;
+                    } else {
+                        player.velocity.x = 0;
+                    }
+                    
+                    const testZ = player.pos.clone().add(new THREE.Vector3(0, 0, player.velocity.z * subDt));
+                    if (!checkCollisions(testZ)) {
+                        player.pos.z = testZ.z;
+                    } else {
+                        player.velocity.z = 0;
+                    }
+                }
+
+                // Strictly evaluate absolute ceiling ground alignments
+                let baseHeight = 1.6;
+                if (CURRENT_LEVEL === "hills") {
+                    baseHeight = getTerrainHeight(player.pos.x, player.pos.z);
+                } else if (CURRENT_LEVEL === "lobby") {
+                    const curGx = Math.round(player.pos.x / 4);
+                    const curGz = Math.round(player.pos.z / 4);
+                    if (curGx >= pitMinX && curGx <= pitMaxX && curGz >= pitMinY && curGz <= pitMaxY) {
+                        baseHeight = -3.4; // dropped pit eye height
+                    }
+                } else if (CURRENT_LEVEL === "level1") {
+                    baseHeight = 1.4;
+                } else if (CURRENT_LEVEL === "level2") {
+                    baseHeight = 1.5;
+                } else if (CURRENT_LEVEL === "pool") {
+                    baseHeight = 1.6;
+                }
+                
+                // Height alignment clamp
                 player.pos.y = THREE.MathUtils.lerp(player.pos.y, baseHeight, 10 * dt);
-                camera.position.lerp(player.pos, 8 * dt);
+                if (player.pos.y < baseHeight - 0.05) {
+                    player.pos.y = baseHeight;
+                }
+                
+                const isMoving = isMobile ? (Math.hypot(mobileJoyVec.x, mobileJoyVec.y) > 0.15) : (keys.w || keys.s || keys.a || keys.d);
+                if (isMoving && Math.abs(player.velocity.length()) > 0.15) {
+                    const bobFreq = (isMobile ? mobileSprinting : keys.shift) ? 14 : 9;
+                    bobTimer += dt * bobFreq;
+                    const bobHeight = Math.sin(bobTimer) * ((isMobile ? mobileSprinting : keys.shift) ? 0.08 : 0.04);
+                    camera.position.copy(player.pos);
+                    camera.position.y += bobHeight;
+                } else {
+                    bobTimer = 0;
+                    camera.position.lerp(player.pos, 8 * dt);
+                }
             }
         }
 
-        // --- 5. Light Proximity Culling Performance optimizations ---
+        // --- 5. Light Management & Volumetric Effects ---
         const activeLightsPool = [];
         const flickeringLights = [];
 
+        function addAtmosphericLight(x, y, z, color, intensity, distance, decay, hasGlow) {
+            const pl = new THREE.PointLight(color, intensity, distance, decay);
+            pl.position.set(x, y, z);
+            scene.add(pl);
+
+            let glowSprite = null;
+            if (hasGlow) {
+                const spriteMat = new THREE.SpriteMaterial({
+                    map: lightGlowTex, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.65
+                });
+                glowSprite = new THREE.Sprite(spriteMat);
+                glowSprite.position.set(x, y - 0.1, z);
+                glowSprite.scale.set(3.2, 1.8, 1.0);
+                scene.add(glowSprite);
+            }
+
+            activeLightsPool.push({ light: pl, glow: glowSprite });
+            return { light: pl, glow: glowSprite };
+        }
+
         function spawnLightSources() {
             if (CURRENT_LEVEL === 'hills') {
-                // Hills uses a soft yellow ambient dome sun light
                 const sunLight = new THREE.DirectionalLight('#fffaed', 0.85);
                 sunLight.position.set(20, 40, 10);
                 scene.add(sunLight);
@@ -1259,30 +1571,57 @@
                 return;
             }
 
-            const lightColor = CURRENT_LEVEL === 'lobby' ? 0xfffae3 : 0xf2fcff;
-            const lightIntensity = CURRENT_LEVEL === 'lobby' ? 1.15 : 0.95;
+            if (CURRENT_LEVEL === 'level7') {
+                // Large volumetric-like shafts pointing downward
+                const beamGeo = new THREE.ConeGeometry(2.5, 12, 16, 1, true);
+                beamGeo.translate(0, -6, 0); // align origin to top of cone
+                const beamMat = new THREE.MeshBasicMaterial({
+                    color: 0x56b2c9, transparent: true, opacity: 0.1,
+                    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+                });
+
+                for (let y = 4; y < MAP_SIZE * 8; y += 12) {
+                    for (let x = 4; x < MAP_SIZE * 8; x += 12) {
+                        // Stark overhead ceiling fixtures
+                        const plate = new THREE.Mesh(
+                            new THREE.BoxGeometry(1.5, 0.02, 1.5),
+                            new THREE.MeshBasicMaterial({ color: 0xebf8ff })
+                        );
+                        plate.position.set(x, 7.95, y);
+                        scene.add(plate);
+
+                        addAtmosphericLight(x, 7.6, y, 0x8fe2f2, 1.4, 25, 1.8, true);
+
+                        const beam = new THREE.Mesh(beamGeo, beamMat);
+                        beam.position.set(x, 7.8, y);
+                        scene.add(beam);
+                    }
+                }
+                return;
+            }
+
+            // Standard grid light generation
+            const lightColor = CURRENT_LEVEL === 'lobby' ? 0xfffae3 : CURRENT_LEVEL === 'level1' ? 0xe2f2e4 : CURRENT_LEVEL === 'level2' ? 0xffebcc : 0xf2fcff;
+            const lightIntensity = CURRENT_LEVEL === 'lobby' ? 1.25 : CURRENT_LEVEL === 'level2' ? 0.75 : 1.1;
+            const ceilHeight = CURRENT_LEVEL === 'level1' ? 2.95 : CURRENT_LEVEL === 'level2' ? 3.15 : 3.75;
 
             for (let y = 2; y < MAP_SIZE - 2; y += 4) {
                 for (let x = 2; x < MAP_SIZE - 2; x += 4) {
                     if (grid[y][x] === 0) {
-                        // Ceil luminaire lens mesh
                         const glass = new THREE.Mesh(
-                            new THREE.BoxGeometry(2.0, 0.02, 1.0),
+                            new THREE.BoxGeometry(2.0, 0.02, 0.8),
                             new THREE.MeshBasicMaterial({ color: CURRENT_LEVEL === 'lobby' ? 0xffffee : 0xf4fcff })
                         );
-                        glass.position.set(x * 4, 3.45, y * 4);
+                        glass.position.set(x * 4, ceilHeight, y * 4);
                         scene.add(glass);
                         
-                        const pointLight = new THREE.PointLight(lightColor, lightIntensity, 15, 1.5);
-                        pointLight.position.set(x * 4, 3.15, y * 4);
-                        scene.add(pointLight);
+                        const item = addAtmosphericLight(x * 4, ceilHeight - 0.25, y * 4, lightColor, lightIntensity, 16, 1.8, true);
 
-                        activeLightsPool.push(pointLight);
-                        
-                        // Flickering hazard assignment
-                        if (Math.random() < 0.15) {
+                        // Random flickering triggers
+                        if (Math.random() < 0.16) {
                             flickeringLights.push({
-                                light: pointLight,
+                                light: item.light,
+                                glow: item.glow,
                                 mesh: glass,
                                 baseIntensity: lightIntensity,
                                 timer: Math.random() * 100
@@ -1291,14 +1630,34 @@
                     }
                 }
             }
+
+            // Warning rotating lights in Level 2 corridors
+            if (CURRENT_LEVEL === "level2") {
+                for (let i = 0; i < 8; i++) {
+                    const px = Math.floor(Math.random() * (MAP_SIZE - 4)) + 2;
+                    const py = Math.floor(Math.random() * (MAP_SIZE - 4)) + 2;
+                    if (grid[py][px] === 0) {
+                        const baseMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9 });
+                        const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3), baseMat);
+                        fixture.position.set(px * 4, 3.1, py * 4);
+                        scene.add(fixture);
+
+                        const item = addAtmosphericLight(px * 4, 2.8, py * 4, 0xff3300, 1.3, 10, 2.0, true);
+                        if (item.glow) item.glow.scale.set(4.0, 2.0, 1.0);
+                    }
+                }
+            }
         }
 
         function cullDistantLights() {
-            if (CURRENT_LEVEL === 'hills') return;
-            const limitDist = GRAPHICS_MODE === 'mobile' ? 18 : 28;
+            if (CURRENT_LEVEL === 'hills' || CURRENT_LEVEL === 'level7') return;
+            const limitDist = GRAPHICS_MODE === 'mobile' ? 18 : 32;
             for (let i = 0; i < activeLightsPool.length; i++) {
-                const distance = player.pos.distanceTo(activeLightsPool[i].position);
-                activeLightsPool[i].visible = distance < limitDist;
+                const item = activeLightsPool[i];
+                const distance = player.pos.distanceTo(item.light.position);
+                const isVisible = distance < limitDist;
+                item.light.visible = isVisible;
+                if (item.glow) item.glow.visible = isVisible;
             }
         }
 
@@ -1326,16 +1685,31 @@
             
             const filter = audioCtx.createBiquadFilter();
             
-            // Adjust synthesizers parameters based on level type
             if (CURRENT_LEVEL === "lobby") {
                 humOsc.type = 'sawtooth';
-                humOsc.frequency.setValueAtTime(60, audioCtx.currentTime); // 60Hz hum
+                humOsc.frequency.setValueAtTime(60, audioCtx.currentTime); 
                 sineOsc.type = 'sine';
                 sineOsc.frequency.setValueAtTime(120, audioCtx.currentTime);
 
                 filter.type = 'bandpass';
                 filter.frequency.setValueAtTime(2400, audioCtx.currentTime);
                 filter.Q.setValueAtTime(1.0, audioCtx.currentTime);
+            } else if (CURRENT_LEVEL === "level1") {
+                humOsc.type = 'sawtooth';
+                humOsc.frequency.setValueAtTime(50, audioCtx.currentTime); 
+                sineOsc.type = 'sine';
+                sineOsc.frequency.setValueAtTime(100, audioCtx.currentTime);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            } else if (CURRENT_LEVEL === "level2") {
+                humOsc.type = 'sawtooth';
+                humOsc.frequency.setValueAtTime(45, audioCtx.currentTime); 
+                sineOsc.type = 'triangle';
+                sineOsc.frequency.setValueAtTime(90, audioCtx.currentTime);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(500, audioCtx.currentTime);
             } else if (CURRENT_LEVEL === "pool") {
                 humOsc.type = 'sine';
                 humOsc.frequency.setValueAtTime(55, audioCtx.currentTime); 
@@ -1344,7 +1718,15 @@
 
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(800, audioCtx.currentTime);
-            } else { // Level 55: Eerie wind synthesizer
+            } else if (CURRENT_LEVEL === "level7") {
+                humOsc.type = 'sine';
+                humOsc.frequency.setValueAtTime(32, audioCtx.currentTime); // Abyssal submarine low frequency rumble
+                sineOsc.type = 'triangle';
+                sineOsc.frequency.setValueAtTime(64, audioCtx.currentTime);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(250, audioCtx.currentTime);
+            } else { 
                 humOsc.type = 'sine';
                 humOsc.frequency.setValueAtTime(45, audioCtx.currentTime);
                 sineOsc.type = 'triangle';
@@ -1354,9 +1736,8 @@
                 filter.frequency.setValueAtTime(350, audioCtx.currentTime);
                 filter.Q.setValueAtTime(2.5, audioCtx.currentTime);
 
-                // LFO to modulate filter freq for rustling wind gusts
                 const lfo = audioCtx.createOscillator();
-                lfo.frequency.setValueAtTime(0.12, audioCtx.currentTime); // 0.12 Hz cycle
+                lfo.frequency.setValueAtTime(0.12, audioCtx.currentTime); 
                 const lfoGain = audioCtx.createGain();
                 lfoGain.gain.setValueAtTime(180, audioCtx.currentTime);
 
@@ -1384,8 +1765,7 @@
             
             mainGain.connect(audioCtx.destination);
             
-            // Level 37 tile echoes delay lines
-            if (CURRENT_LEVEL === "pool") {
+            if (CURRENT_LEVEL === "pool" || CURRENT_LEVEL === "level7") {
                 const delay = audioCtx.createDelay(1.0);
                 delay.delayTime.setValueAtTime(0.48, audioCtx.currentTime);
                 
@@ -1404,7 +1784,7 @@
             noiseSource.start();
         }
 
-        // --- 7. Creepy Stalker Sprite Entity ---
+        // --- 7. Stalker Entity Mechanics ---
         let entityMesh = null;
         function spawnStalker() {
             const canvas = document.createElement('canvas');
@@ -1416,7 +1796,6 @@
             ctx.lineWidth = 11;
             ctx.lineCap = 'round';
             
-            // Spook abstract frame skeleton (Bacteria structure)
             ctx.beginPath();
             ctx.moveTo(64, 40);
             ctx.bezierCurveTo(44, 90, 84, 170, 64, 245);
@@ -1462,7 +1841,6 @@
             
             const dist = player.pos.distanceTo(entityMesh.position);
             
-            // Constant visual vibration jitter
             if (Math.random() < 0.12) {
                 entityMesh.scale.x = 1.35 + Math.random() * 0.15;
                 entityMesh.scale.y = 2.7 + Math.random() * 0.25;
@@ -1474,19 +1852,22 @@
                 camera.getWorldDirection(camDir);
                 const viewProduct = camDir.dot(toPlayer);
                 
-                // Creeps forward when player is not observing directly, or if they are in close proximity
                 if (viewProduct < 0.3 || dist < 6.5) {
                     const speed = dist < 5 ? 2.3 : 1.1;
                     const cleanDir = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
                     entityMesh.position.addScaledVector(cleanDir, -speed * dt);
-                    // Match ground height if on Level 55
-                    entityMesh.position.y = getTerrainHeight(entityMesh.position.x, entityMesh.position.z) - 1.6 + 1.4;
+                    
+                    if (CURRENT_LEVEL === "hills") {
+                        entityMesh.position.y = getTerrainHeight(entityMesh.position.x, entityMesh.position.z) - 1.6 + 1.4;
+                    } else if (CURRENT_LEVEL === "level7") {
+                        // Slowly swim towards players
+                        entityMesh.position.addScaledVector(toPlayer, -speed * 0.5 * dt);
+                    }
                 }
             } else if (dist <= 1.2) {
                 triggerJumpscare();
             }
             
-            // Proximity noise distortion modulation
             if (staticGainNode && audioCtx) {
                 if (dist < 15) {
                     const multiplier = Math.max(0.015, 0.22 * (1 - dist / 15));
@@ -1497,7 +1878,7 @@
             }
         }
 
-        // --- 8. Jumpscare State Solver ---
+        // --- 8. Jumpscare Mechanism ---
         let isJumpscared = false;
 
         function triggerJumpscare() {
@@ -1523,7 +1904,6 @@
             }
             
             setTimeout(() => {
-                // Respawn and relocate player
                 player.pos.set(spawnX * 4, 1.6, spawnY * 4);
                 yaw = 0; pitch = 0;
                 applyCameraRotation();
@@ -1557,7 +1937,7 @@
             requestAnimationFrame(runGameLoop);
             
             const currTime = performance.now();
-            const dt = Math.min((currTime - lastTimeFrame) / 1000, 0.1); // clamp logic drops
+            const dt = Math.min((currTime - lastTimeFrame) / 1000, 0.1); 
             lastTimeFrame = currTime;
             
             updatePlayerPhysics(dt);
@@ -1566,20 +1946,22 @@
             
             cullDistantLights();
 
-            // Liquid motion animation
             if (waterPlane) {
-                waterHeightTex.offset.x += dt * 0.014;
-                waterHeightTex.offset.y += dt * 0.009;
+                waterHeightTex.offset.x += dt * 0.012;
+                waterHeightTex.offset.y += dt * 0.008;
             }
 
-            // Fluorescent flicker logic
+            // High-fidelity fluorscent lighting flicker logic
             flickeringLights.forEach(item => {
                 item.timer += dt * 11;
                 if (Math.sin(item.timer) * Math.cos(item.timer * 2.3) > 0.44) {
-                    item.light.intensity = 0.04 + Math.random() * 0.1;
+                    const targetInt = 0.04 + Math.random() * 0.08;
+                    item.light.intensity = targetInt;
+                    if (item.glow) item.glow.material.opacity = targetInt * 0.3;
                     item.mesh.material.color.setHex(0x2a2a22);
                 } else {
                     item.light.intensity = item.baseIntensity;
+                    if (item.glow) item.glow.material.opacity = 0.65;
                     item.mesh.material.color.setHex(CURRENT_LEVEL === 'lobby' ? 0xffffee : 0xf4fcff);
                 }
             });
@@ -1587,15 +1969,15 @@
             renderer.render(scene, camera);
         }
 
-        // --- 10. Start Handler Init ---
+        // --- 10. Start Handler Initialization ---
         document.querySelector('.btn-start').addEventListener('click', () => {
             CURRENT_LEVEL = document.getElementById('level-select').value;
             GRAPHICS_MODE = document.getElementById('perf-select').value;
 
             if (GRAPHICS_MODE === 'mobile') {
-                renderer.setPixelRatio(1.0); // Strict low processing cost cap
+                renderer.setPixelRatio(1.0);
             } else {
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
             }
 
             if (!isMobile) {
@@ -1611,7 +1993,6 @@
             runGameLoop();
         });
 
-        // Frame responsiveness
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
